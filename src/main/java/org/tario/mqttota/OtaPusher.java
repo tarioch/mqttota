@@ -49,12 +49,14 @@ public class OtaPusher {
 			sampleClient.connect(conOptions);
 
 			sampleClient.subscribe(nodeStateListener.getStateTopicPath(), nodeStateListener);
+			sampleClient.subscribe(nodeStateListener.getVersionTopicPath(), nodeStateListener);
 			Thread.sleep(queryWait);
 			List<String> nodes = state.getAllNodes();
 			for (String node : nodes) {
 				System.out.println("-------------------");
 				System.out.println("Node: " + node);
 				System.out.println("State: " + state.getNodeState(node));
+				System.out.println("Version: " + state.getNodeVersion(node));
 			}
 
 		} catch (MqttException | InterruptedException e) {

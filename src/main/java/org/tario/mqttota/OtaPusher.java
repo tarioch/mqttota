@@ -28,8 +28,9 @@ public class OtaPusher {
 	}
 
 	public void run() {
+		MqttClient sampleClient = null;
 		try {
-			MqttClient sampleClient = new MqttClient(mqttServer, mqttClient);
+			sampleClient = new MqttClient(mqttServer, mqttClient);
 			MqttConnectOptions conOptions = new MqttConnectOptions();
 			conOptions.setUserName(mqttUser);
 			conOptions.setPassword(mqttPassword.toCharArray());
@@ -39,9 +40,16 @@ public class OtaPusher {
 
 			sampleClient.subscribe("nodemcu/+/state", stateListener);
 			Thread.sleep(2000);
-			sampleClient.disconnect();
 		} catch (MqttException | InterruptedException e) {
 			e.printStackTrace();
+		} finally {
+			if (sampleClient != null && sampleClient.isConnected()) {
+				try {
+					sampleClient.disconnect();
+				} catch (MqttException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 

@@ -1,0 +1,7 @@
+mqtt.server=tcp://hostname:port
+mqtt.client=otaupdater
+mqtt.user=myuser
+mqtt.password=secret
+mqtt.query.wait=1000
+mqtt.topic.prefix=nodemcu/
+mqtt.topic.suffix.state=/state

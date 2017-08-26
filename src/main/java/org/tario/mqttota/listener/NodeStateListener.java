@@ -18,7 +18,7 @@ public class NodeStateListener implements IMqttMessageListener {
 			OverallState state,
 			@Value("${mqtt.topic.prefix}") String topicPrefix,
 			@Value("${mqtt.topic.suffix.state}") String stateSuffix,
-			@Value("${mqtt.topic.suffix.state}") String versionSuffix) {
+			@Value("${mqtt.topic.suffix.version}") String versionSuffix) {
 		this.state = state;
 		this.topicPrefix = topicPrefix;
 		this.stateSuffix = stateSuffix;

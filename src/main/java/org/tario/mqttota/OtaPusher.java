@@ -1,5 +1,8 @@
 package org.tario.mqttota;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -8,6 +11,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.tario.mqttota.listener.NodeStateListener;
+import org.tario.mqttota.runner.CommandRunner;
 import org.tario.mqttota.state.OverallState;
 
 @Component
@@ -21,6 +25,7 @@ public class OtaPusher {
 
 	private NodeStateListener nodeStateListener;
 	private OverallState state;
+	private CommandRunner runner;
 
 	OtaPusher(
 			@Value("${mqtt.server}") String mqttServer,
@@ -29,7 +34,8 @@ public class OtaPusher {
 			@Value("${mqtt.password}") String mqttPassword,
 			@Value("${mqtt.query.wait}") int queryWait,
 			NodeStateListener nodeStateListener,
-			OverallState state) {
+			OverallState state,
+			CommandRunner runner) {
 		this.mqttServer = mqttServer;
 		this.mqttClient = mqttClient;
 		this.mqttUser = mqttUser;
@@ -37,19 +43,20 @@ public class OtaPusher {
 		this.queryWait = queryWait;
 		this.nodeStateListener = nodeStateListener;
 		this.state = state;
+		this.runner = runner;
 	}
 
 	public void run() {
-		MqttClient sampleClient = null;
+		MqttClient client = null;
 		try {
-			sampleClient = new MqttClient(mqttServer, mqttClient);
+			client = new MqttClient(mqttServer, mqttClient);
 			MqttConnectOptions conOptions = new MqttConnectOptions();
 			conOptions.setUserName(mqttUser);
 			conOptions.setPassword(mqttPassword.toCharArray());
-			sampleClient.connect(conOptions);
+			client.connect(conOptions);
 
-			sampleClient.subscribe(nodeStateListener.getStateTopicPath(), nodeStateListener);
-			sampleClient.subscribe(nodeStateListener.getVersionTopicPath(), nodeStateListener);
+			client.subscribe(nodeStateListener.getStateTopicPath(), nodeStateListener);
+			client.subscribe(nodeStateListener.getVersionTopicPath(), nodeStateListener);
 			Thread.sleep(queryWait);
 			List<String> nodes = state.getAllNodes();
 			for (String node : nodes) {
@@ -59,12 +66,16 @@ public class OtaPusher {
 				System.out.println("Version: " + state.getNodeVersion(node));
 			}
 
-		} catch (MqttException | InterruptedException e) {
+			// runner.executeReboot("salt1", client);
+			List<String> content = Files.readAllLines(Paths.get("src/main/lua/setup.lua"));
+			runner.writeFile("node1", "setup.lua", content, client);
+			Thread.sleep(queryWait);
+		} catch (MqttException | InterruptedException | IOException e) {
 			e.printStackTrace();
 		} finally {
-			if (sampleClient != null && sampleClient.isConnected()) {
+			if (client != null && client.isConnected()) {
 				try {
-					sampleClient.disconnect();
+					client.disconnect();
 				} catch (MqttException e) {
 					e.printStackTrace();
 				}

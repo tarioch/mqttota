@@ -3,7 +3,11 @@ local module = {}
 function module.prepare()
 end
 
-function module.register(mqclient)
+function module.subscribe()
+  return {}
+end
+
+function module.start(mqclient)
 end
 
 function module.on_message(topic, data)

@@ -30,7 +30,7 @@ public class CommandRunner {
 	public void writeFile(String node, String filename, List<String> content, MqttClient client) {
 		sendCommand("openfile", "", node, client);
 		for (String line : content) {
-			sendCommand("writeline", line + "\n", node, client);
+			sendCommand("writeline", line, node, client);
 		}
 		sendCommand("closefile", filename, node, client);
 	}

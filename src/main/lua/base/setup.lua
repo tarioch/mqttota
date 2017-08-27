@@ -25,44 +25,53 @@ local function mqtt_start()
     app.prepare()
 
     local m = mqtt.Client(config.ID, 120, config.USER, config.PASS)
-
     m:lwt(config.ENDPOINT .. "state", "dead", 0, 1)
 
-    print("Connecting to broker...")
+
+    m:on("offline", function(conn)
+      print("MQTTT went offline, rebooting")
+      node.restart()
+    end)    
+
+    local otacmdtopic = config.ENDPOINT .. "otacmd"
+    m:on("message", function(conn, topic, data) 
+        if data ~= nil then
+            if topic == otacmdtopic then
+                local sepPos = string.find(data, ":")
+                local command = string.sub(data, 1, sepPos - 1)
+                local arguments = string.sub(data, sepPos + 1)
+                ota_cmd(command, arguments)
+            else
+              print("Received on topic: " .. topic)
+              app.on_message(topic, data)
+            end
+        end
+    end)
+    
+    print("Connecting to broker " .. config.HOST .. " ... ")
     m:connect(config.HOST, config.PORT, 0, function(con) 
         print("Connected")
 
         m:publish(config.ENDPOINT .. "state","online",0,1)
         m:publish(config.ENDPOINT .. "version",config.VERSION,0,1)
 
-        local otacmdtopic = config.ENDPOINT .. "otacmd"
-        m:subscribe(otacmdtopic, 2, function(conn)
-            print("Successfully subscribed to " .. otacmdtopic)
-        end)
+        local topics = {}
+        topics[config.ENDPOINT .. "otacmd"] = 2
+        
+        local appTopics = app.subscribe{}
+        for key, var in pairs(appTopics) do
+          topics[key] = var
+        end        
+        
 
-        m:on("message", function(conn, topic, data) 
-            if data ~= nil then
-                if topic == otacmdtopic then
-                    local sepPos = string.find(data, ":")
-                    local command = string.sub(data, 1, sepPos - 1)
-                    local arguments = string.sub(data, sepPos + 1)
-                    ota_cmd(command, arguments)
-                else
-	                print("Received on topic: " .. topic)
-                    app.on_message(topic, data)
-                end
-            end
+        m:subscribe(topics, function(conn)
+            print("Successfully subscribed")
         end)
         
-        m:on("offline", function(conn)
-        	print("MQTTT went offline, rebooting")
-        	node.restart()
-        end)
-        
-        app.register(m)        
+        app.start(m)        
     end, function(conn, reason)
-    	print("Connection failed: " .. reason)
-    	tmr.create():alarm(10 * 1000, tmr.ALARM_SINGLE, mqtt_start)
+      print("Connection failed: " .. reason)
+      tmr.create():alarm(10 * 1000, tmr.ALARM_SINGLE, mqtt_start)
     end) 
 end
 
@@ -71,8 +80,8 @@ local function wifi_wait_ip()
     print("IP unavailable, Waiting...")
   else
     tmr.stop(1)
-    print("MAC address is: " .. wifi.ap.getmac())
-    print("IP is " .. wifi.sta.getip())
+    print("MAC address: " .. wifi.ap.getmac())
+    print("IP: " .. wifi.sta.getip())
 
     wifi.eventmon.register(wifi.eventmon.STA_DISCONNECTED, function(T)
       print("Wifi disconnected, rebooting: " .. T.reason)

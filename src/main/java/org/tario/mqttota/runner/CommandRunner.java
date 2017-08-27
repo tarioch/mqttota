@@ -12,12 +12,15 @@ public class CommandRunner {
 
 	private String topicPrefix;
 	private String topicSuffixCmd;
+	private int cmdWait;
 
 	CommandRunner(
 			@Value("${mqtt.topic.prefix}") String topicPrefix,
-			@Value("${mqtt.topic.suffix.otacmd}") String topicSuffixCmd) {
+			@Value("${mqtt.topic.suffix.otacmd}") String topicSuffixCmd,
+			@Value("${mqtt.cmd.wait}") int cmdWait) {
 		this.topicPrefix = topicPrefix;
 		this.topicSuffixCmd = topicSuffixCmd;
+		this.cmdWait = cmdWait;
 	}
 
 	public void executeReboot(String node, MqttClient client) {
@@ -36,7 +39,7 @@ public class CommandRunner {
 		String content = command + ":" + arguments;
 		try {
 			client.publish(getCmdTopic(node), content.getBytes(), 2, false);
-			Thread.sleep(100);
+			Thread.sleep(cmdWait);
 		} catch (MqttException | InterruptedException e) {
 			e.printStackTrace();
 		}

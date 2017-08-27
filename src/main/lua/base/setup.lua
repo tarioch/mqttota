@@ -9,7 +9,7 @@ local function ota_cmd(command, arguments)
         file.remove("tmpfile")
         file.open("tmpfile", "w+")
     elseif "writeline" == command then
-    	print("Write Line: " .. arguments)
+        print("Write Line: " .. arguments)
         file.writeline(arguments)
     elseif "closefile" == command then
         file.close()
@@ -66,38 +66,35 @@ local function mqtt_start()
     end) 
 end
 
-local function wifi_disconnected()
-	wifi.eventmon.register(wifi.eventmon.STA_DISCONNECTED, function(T)
-		print("Wifi disconnected, rebooting: " .. T.reason)
-		node.restart()
-	end)
-end
-
 local function wifi_wait_ip()  
-  if wifi.sta.getip()== nil then
+  if wifi.sta.getip() == nil then
     print("IP unavailable, Waiting...")
   else
     tmr.stop(1)
-    print("\n====================================")
-    print("WIFI mode is: " .. wifi.getmode())
     print("MAC address is: " .. wifi.ap.getmac())
     print("IP is " .. wifi.sta.getip())
-    print("====================================")
+
+    wifi.eventmon.register(wifi.eventmon.STA_DISCONNECTED, function(T)
+      print("Wifi disconnected, rebooting: " .. T.reason)
+      node.restart()
+    end)
+
     mqtt_start()
   end
 end
 
-local function wifi_start()  
+local function wifi_start()
+  local cfg = {}
+  cfg.ssid = config.SSID
+  cfg.pwd = config.SSID_PASS
   wifi.setmode(wifi.STATION);
-  wifi.sta.config(config.SSID,config.SSID_PASS)
-  wifi.sta.connect()
+  wifi.sta.config(cfg)
+  
   print("Connecting to " .. config.SSID .. " ...")
   tmr.alarm(1, 2500, 1, wifi_wait_ip)
 end
 
 function module.start()  
-  print("Configuring Wifi ...")
-  wifi.setmode(wifi.STATION);
   wifi_start()
 end
 

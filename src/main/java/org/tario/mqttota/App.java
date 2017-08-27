@@ -19,7 +19,6 @@ import org.springframework.context.annotation.PropertySource;
 public class App {
 
 	private static final String SINGLE_NODE_OPTION = "n";
-	private static final String ALL_NODES_OPTION = "a";
 
 	public static void main(String[] args) {
 		try (ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(App.class)) {
@@ -29,16 +28,13 @@ public class App {
 					.hasArg()
 					.argName("NODE")
 					.build());
-			options.addOption(ALL_NODES_OPTION, false, "Update all nodes");
 
 			CommandLineParser cliParser = new DefaultParser();
 			try {
 				CommandLine cli = cliParser.parse(options, args);
 				OtaPusher otaPusher = context.getBean(OtaPusher.class);
 
-				if (cli.hasOption(ALL_NODES_OPTION)) {
-					otaPusher.updateAllNodes();
-				} else if (cli.hasOption(SINGLE_NODE_OPTION)) {
+				if (cli.hasOption(SINGLE_NODE_OPTION)) {
 					otaPusher.updateNode(cli.getOptionValue(SINGLE_NODE_OPTION));
 				} else {
 					otaPusher.readState();

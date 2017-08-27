@@ -78,11 +78,6 @@ public class OtaPusher {
 		}
 	}
 
-	public void updateAllNodes() {
-		System.out.println("Updating all nodes");
-
-	}
-
 	public void updateNode(String node) {
 		System.out.println("Updating node " + node);
 
